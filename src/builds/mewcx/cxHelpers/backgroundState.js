@@ -84,25 +84,28 @@ const useHash = getMode() === 'hash' ? '#' : '';
     return true;
   };
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, function(tabs) {
-    web3Injector(tabs);
+    web3Injector(tabs[0]);
   });
 
-  chrome.tabs.onActivated.addListener(cb);
-  chrome.tabs.onUpdated.addListener(cb);
+  chrome.tabs.onActivated.addListener(onActivatedCb);
+  chrome.tabs.onUpdated.addListener(onUpdatedCb);
 
-  function cb() {
+  function onUpdatedCb(_, __, tabs) {
     chrome.runtime.onMessage.removeListener(eventsListeners);
-    chrome.tabs.query({ active: true, lastFocusedWindow: true }, function(
-      tabs
-    ) {
-      web3Injector(tabs);
+    web3Injector(tabs);
+    chrome.runtime.onMessage.addListener(eventsListeners);
+  }
+  function onActivatedCb(info) {
+    chrome.runtime.onMessage.removeListener(eventsListeners);
+    chrome.tabs.get(info.tabId, function(tab) {
+      web3Injector(tab);
     });
-
     chrome.runtime.onMessage.addListener(eventsListeners);
   }
 
-  function web3Injector(tabs) {
-    console.log('web3 injector called');
-    chrome.tabs.sendMessage(tabs[0].id, { msg: 'injectWeb3' }, function() {});
+  function web3Injector(tab) {
+    if (typeof tab !== 'undefined') {
+      chrome.tabs.sendMessage(tab.id, { msg: 'injectWeb3' }, function() {});
+    }
   }
 })();

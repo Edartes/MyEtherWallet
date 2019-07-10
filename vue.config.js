@@ -21,6 +21,7 @@ const webpackConfig = {
   node: {
     process: true
   },
+  devtool: 'source-map',
   devServer: {
     // disableHostCheck: true, // Dev purposes only, should be commented out before release
     https:  true,
@@ -65,17 +66,18 @@ const webpackConfig = {
           chunks: 'initial'
         }
       }
-    }
-    // minify: false
+    },
+    minimize: false
   }
 };
 if (JSON.parse(env_vars.BUILD_TYPE) === 'mewcx') {
+  webpackConfig.optimization.splitChunks = false;
   webpackConfig.plugins.push(new CopyWebpackPlugin([
     {
       from: 'src/builds/' + JSON.parse(env_vars.BUILD_TYPE) + '/public',
       transform: function(content, filePath) {
-        // if (filePath.split('.').pop() === ('js' || 'JS'))
-        //   return UglifyJS.minify(content.toString()).code;
+        if (filePath.split('.').pop() === ('js' || 'JS'))
+          return UglifyJS.minify(content.toString()).code;
         if (
           filePath.replace(/^.*[\\\/]/, '') === 'manifest.json' &&
           JSON.parse(env_vars.BUILD_TYPE) === 'mewcx'
@@ -90,19 +92,6 @@ if (JSON.parse(env_vars.BUILD_TYPE) === 'mewcx') {
             json.version = version;
           }
 
-          // if (process.env.NODE_ENV === 'production') {
-          //   json.background.scripts = json.background.scripts.map(item => {
-          //     return `js/${item}`;
-          //   });
-
-          //   json.content_scripts[0].js = json.content_scripts[0].js.map(item => {
-          //     return `js/${item}`;
-          //   });
-
-          //   json.web_accessible_resources = json.web_accessible_resources.map(item => {
-          //     return `js/${item}`;
-          //   });
-          // }
           return JSON.stringify(json, null, 2);
         }
         return content;
@@ -121,8 +110,6 @@ if (process.env.NODE_ENV === 'production') {
       }
     })
   );
-
-  webpackConfig.devtool = 'source-map';
 }
 const pwa = {
   name: 'MyEtherWallet',
@@ -168,9 +155,7 @@ const exportObj = {
 };
 
 if (JSON.parse(env_vars.BUILD_TYPE) === 'mewcx') {
-  // exportObj['publicPath'] = '';
   exportObj['outputDir'] = path.resolve(__dirname, 'chrome-extension');
-  // exportObj['assetsDir'] = '';
   exportObj['filenameHashing'] = false;
   exportObj['productionSourceMap'] = false;
 }
